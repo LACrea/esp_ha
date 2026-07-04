@@ -911,6 +911,7 @@ var CARD_CONTRACT_CARDS = {
           "previous",
           "next",
           "volume",
+          "power",
           "position",
           "now_playing",
           "tv_now_playing"

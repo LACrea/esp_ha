@@ -2401,6 +2401,7 @@ inline const char *media_default_icon(const std::string &mode,
   if (mode == "next") return find_icon("Skip Next");
   if (mode == "play_pause") return find_icon("Play Pause");
   if (mode == "volume") return find_icon("Volume High");
+  if (mode == "power") return find_icon("Power");
   if (mode == "position") return find_icon("Progress Clock");
   if (mode == "now_playing") return find_icon("Music");
   if (mode == "tv_now_playing") return find_icon("Television");
@@ -2411,6 +2412,7 @@ inline std::string media_default_label(const std::string &mode) {
   if (mode == "previous") return espcontrol_i18n(std::string("Previous"));
   if (mode == "next") return espcontrol_i18n(std::string("Next"));
   if (mode == "volume") return espcontrol_i18n(std::string("Volume"));
+  if (mode == "power") return espcontrol_i18n(std::string("Power"));
   if (mode == "position") return espcontrol_i18n(std::string("Position"));
   if (mode == "play_pause") return espcontrol_i18n(std::string("Play/Pause"));
   return espcontrol_i18n(std::string("Media"));

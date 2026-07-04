@@ -1252,6 +1252,8 @@ inline void grid_phase2(
         } else if (media_playback_button_mode(mode)) {
           subscribe_control_availability(s.btn, s.btn, p.entity);
           // Previous/next are momentary actions and do not reflect player state.
+        } else if (mode == "power") {
+          subscribe_media_power_state(s.btn, p.entity);
         } else if (mode == "volume") {
           MediaVolumeCtx *ctx = create_media_volume_context(
             s.btn, s.text_lbl, p, has_on ? on_val : DEFAULT_SLIDER_COLOR,
@@ -1939,6 +1941,16 @@ inline void grid_phase2(
                 sb_cfg.entity);
             else
               subscribe_control_availability(sub_slot.btn, sub_slot.btn, sb_cfg.entity);
+          } else if (mode == "power") {
+            ParsedCfg *ctx = new ParsedCfg(sb_cfg);
+            lv_obj_add_event_cb(sb_btn, [](lv_event_t *e) {
+              lv_obj_t *target = static_cast<lv_obj_t *>(lv_event_get_target(e));
+              if (target && lv_obj_has_state(target, LV_STATE_DISABLED)) return;
+              ParsedCfg *c = (ParsedCfg *)lv_event_get_user_data(e);
+              if (c) send_media_power_action(
+                c->entity, !(target && lv_obj_has_state(target, LV_STATE_CHECKED)));
+            }, LV_EVENT_CLICKED, ctx);
+            subscribe_media_power_state(sub_slot.btn, sb_cfg.entity);
           } else if (mode == "volume") {
             MediaVolumeCtx *ctx = create_media_volume_context(
               sub_slot.btn, sub_slot.text_lbl, sb_cfg,

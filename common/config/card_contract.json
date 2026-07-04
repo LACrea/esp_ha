@@ -755,7 +755,7 @@
           "name": "media_mode",
           "label": "Type",
           "kind": "choice",
-          "values": ["play_pause", "previous", "next", "volume", "position", "now_playing", "tv_now_playing"],
+          "values": ["play_pause", "previous", "next", "volume", "power", "position", "now_playing", "tv_now_playing"],
           "defaultValue": "play_pause"
         },
         {

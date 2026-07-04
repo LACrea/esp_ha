@@ -18,6 +18,7 @@ A Media card controls a Home Assistant `media_player` entity. It can work as a s
    - **Previous Button**
    - **Next Button**
    - **Volume Button**
+   - **Power Button**
    - **Track Position**
    - **Now Playing**
    - **TV Now Playing**
@@ -37,6 +38,12 @@ The Volume Button shows the current volume percentage. Tapping it opens a volume
 Set **Maximum Volume** to cap the panel control below 100%. The popup dial rescales to that maximum, so a 40% cap makes 40% the end of the arc.
 
 The card watches the media player's `volume_level` attribute, so it also updates when volume changes elsewhere.
+
+## Power Button
+
+The Power Button turns a media player on or off, which is handy for a TV or set-top box. The card highlights while the player is on — any active state such as playing, paused, or idle counts as on; only **off** and **standby** show as off.
+
+Tapping the card sends `media_player.turn_on` when the player is off and `media_player.turn_off` when it is on.
 
 ## Track Position
 

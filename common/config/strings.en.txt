@@ -113,6 +113,7 @@ play_pause=Play/Pause
 playing=Playing
 position=Position
 pouring=Pouring
+power=Power
 presence=Presence
 preset=Preset
 previous=Previous

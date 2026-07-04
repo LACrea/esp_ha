@@ -72,6 +72,7 @@ inline SubpageBtn normalize_subpage_btn(SubpageBtn b) {
       b.sensor = "play_pause";
     } else if (b.sensor != "play_pause" && b.sensor != "previous" &&
                b.sensor != "next" && b.sensor != "volume" &&
+               b.sensor != "power" &&
                b.sensor != "position" && b.sensor != "now_playing" &&
                b.sensor != "tv_now_playing") {
       b.sensor = "play_pause";

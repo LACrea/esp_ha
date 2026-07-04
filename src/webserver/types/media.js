@@ -57,6 +57,7 @@ var MEDIA_CARD_METADATA = {
       ["previous", "Previous Button"],
       ["next", "Next Button"],
       ["volume", "Volume Button"],
+      ["power", "Power Button"],
       ["position", "Track Position"],
       ["now_playing", "Now Playing"],
       ["tv_now_playing", "TV Now Playing"],
@@ -132,6 +133,7 @@ registerButtonType("media", {
       if (mode === "previous") return "Skip Previous";
       if (mode === "next") return "Skip Next";
       if (mode === "volume") return "Volume High";
+      if (mode === "power") return "Power";
       if (mode === "position") return "Progress Clock";
       if (mode === "now_playing") return "Music";
       if (mode === "tv_now_playing") return "Television";
@@ -169,7 +171,7 @@ registerButtonType("media", {
           if (b.sensor === "now_playing") {
             b.precision = mediaNowPlayingControls(b);
             helpers.saveField("precision", b.precision);
-          } else if (b.sensor === "tv_now_playing") {
+          } else if (b.sensor === "tv_now_playing" || b.sensor === "power") {
             b.precision = "";
             helpers.saveField("precision", "");
           } else if (b.sensor === "play_pause" || b.sensor === "position") {
@@ -214,7 +216,7 @@ registerButtonType("media", {
     b.unit = "";
     b.precision = b.sensor === "now_playing"
       ? mediaNowPlayingControls(b)
-      : b.sensor === "tv_now_playing" ? ""
+      : b.sensor === "tv_now_playing" || b.sensor === "power" ? ""
       : ((b.sensor === "play_pause" || b.sensor === "position") && b.precision === "state" ? "state" : "");
     b.icon_on = "Auto";
     var normalizedOptions = normalizeMediaOptions(b.options, b.sensor);
@@ -359,6 +361,7 @@ registerButtonType("media", {
       if (value === "previous") return { mode: "previous", label: "Previous", icon: "skip-previous" };
       if (value === "next") return { mode: "next", label: "Next", icon: "skip-next" };
       if (value === "volume") return { mode: "volume", label: "Volume", icon: "volume-high" };
+      if (value === "power") return { mode: "power", label: "Power", icon: "power" };
       if (value === "position") return { mode: "position", label: "Position", icon: "progress-clock" };
       if (value === "now_playing") return { mode: "now_playing", label: "Now Playing", icon: "music" };
       if (value === "tv_now_playing") return { mode: "tv_now_playing", label: "TV Now Playing", icon: "television" };

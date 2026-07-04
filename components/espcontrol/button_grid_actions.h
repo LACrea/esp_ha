@@ -475,6 +475,11 @@ inline void send_media_playback_action(const std::string &entity_id,
   send_media_player_action(entity_id, media_service_for_mode(mode));
 }
 
+inline void send_media_power_action(const std::string &entity_id, bool turn_on) {
+  send_media_player_action(entity_id,
+    turn_on ? "media_player.turn_on" : "media_player.turn_off");
+}
+
 inline bool media_fast_press_mode(const std::string &mode) {
   return mode == "previous" || mode == "next";
 }
@@ -652,6 +657,9 @@ inline void handle_button_click(const std::string &cfg, int slot_num,
     } else if (mode == "tv_now_playing") {
       MediaTvNowPlayingCtx *ctx = (MediaTvNowPlayingCtx *)lv_obj_get_user_data(btn_obj);
       if (ctx) media_tv_now_playing_open_modal(ctx);
+    } else if (mode == "power") {
+      send_media_power_action(
+        p.entity, !(btn_obj && lv_obj_has_state(btn_obj, LV_STATE_CHECKED)));
     } else if (mode == "now_playing" && p.precision == "play_pause") {
       send_media_playback_action(p.entity, "play_pause");
     } else if (media_playback_button_mode(mode)) {
