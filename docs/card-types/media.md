@@ -18,8 +18,10 @@ A Media card controls a Home Assistant `media_player` entity. It can work as a s
    - **Previous Button**
    - **Next Button**
    - **Volume Button**
+   - **Power Button**
    - **Track Position**
    - **Now Playing**
+   - **TV Now Playing**
 3. Enter the media player entity, for example `media_player.living_room`.
 4. Set a label or icon if the selected type shows those fields.
 
@@ -36,6 +38,12 @@ The Volume Button shows the current volume percentage. Tapping it opens a volume
 Set **Maximum Volume** to cap the panel control below 100%. The popup dial rescales to that maximum, so a 40% cap makes 40% the end of the arc.
 
 The card watches the media player's `volume_level` attribute, so it also updates when volume changes elsewhere.
+
+## Power Button
+
+The Power Button turns a media player on or off, which is handy for a TV or set-top box. The card highlights while the player is on — any active state such as playing, paused, or idle counts as on; only **off** and **standby** show as off.
+
+Tapping the card sends `media_player.turn_on` when the player is off and `media_player.turn_off` when it is on.
 
 ## Track Position
 
@@ -58,6 +66,27 @@ You can choose optional controls:
 - **Play/Pause** makes the card tappable so it toggles playback.
 
 Now Playing works best on wider or larger cards because it has more room for track text.
+
+## TV Now Playing
+
+TV Now Playing is a single card for a TV or set-top box such as Apple TV. It shows what is playing on the grid and opens a full control popup when tapped.
+
+On the grid:
+
+- **Playing:** title plus artist or app name; layout adapts to any card size, with wide slots showing the most text.
+- **Idle:** icon, room label, and **Idle**.
+
+In the popup:
+
+- **Previous**, **Play/Pause**, and **Next**
+- **Volume −** and **Volume +** (step volume, not a slider)
+- A progress bar only when the player reports a track duration (hidden for live TV)
+
+Set an optional **Label** for the room name shown when the TV is idle, for example **Living Room**.
+
+::: tip Wide slots
+TV Now Playing works in any grid size. Use a **wide** slot when you want more room for title and artist text.
+:::
 
 ::: info Requires Home Assistant actions
 Media cards send Home Assistant actions from the panel. If tapping a card does nothing, check [Enable Actions](/getting-started/home-assistant-actions).

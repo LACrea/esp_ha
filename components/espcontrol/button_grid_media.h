@@ -445,7 +445,7 @@ inline void setup_media_card(BtnSlot &s, const ParsedCfg &p, uint32_t on_color,
   lv_obj_add_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
   lv_coord_t pad = lv_obj_get_style_radius(s.btn, LV_PART_MAIN) + 4;
   std::string mode = media_card_mode(p.sensor);
-  if (media_playback_button_mode(mode)) {
+  if (media_playback_button_mode(mode) || mode == "power") {
     setup_media_action_layout(s.btn, s.icon_lbl, s.text_lbl, p);
     return;
   }
@@ -507,6 +507,28 @@ inline void subscribe_media_state(lv_obj_t *btn_ptr,
           std::string label = media_status_text(state_text);
           lv_label_set_text(status_lbl, label.c_str());
         }
+      })
+  );
+}
+
+// Treat any active player state (playing, paused, idle, on) as powered on;
+// only off/standby and unavailable states count as off.
+inline bool media_power_state_on(const std::string &state_text) {
+  return !state_text.empty() && state_text != "off" && state_text != "standby" &&
+         state_text != "unavailable" && state_text != "unknown";
+}
+
+inline void subscribe_media_power_state(lv_obj_t *btn_ptr,
+                                        const std::string &entity_id) {
+  register_ha_control_availability(btn_ptr, btn_ptr);
+  ha_subscribe_state(
+    entity_id,
+    std::function<void(esphome::StringRef)>(
+      [btn_ptr](esphome::StringRef state) {
+        std::string state_text = string_ref_limited(state, HA_SHORT_STATE_MAX_LEN);
+        bool unavailable = ha_state_unavailable_ref(state);
+        apply_control_availability(btn_ptr, btn_ptr, !unavailable);
+        set_card_checked_state(btn_ptr, !unavailable && media_power_state_on(state_text));
       })
   );
 }
@@ -679,10 +701,9 @@ inline void open_device_volume_modal(lv_obj_t *anchor,
 }
 #endif
 
-inline void subscribe_media_slider_state(lv_obj_t *btn_ptr,
-                                         lv_obj_t *slider,
-                                         const std::string &entity_id) {
-  SliderCtx *ctx = (SliderCtx *)lv_obj_get_user_data(slider);
+inline void subscribe_media_slider_ctx(lv_obj_t *btn_ptr,
+                                       SliderCtx *ctx,
+                                       const std::string &entity_id) {
   if (!ctx) return;
   register_ha_control_availability(
     btn_ptr, ctx->interactive ? ctx->media_slider : nullptr, ctx->interactive);
@@ -767,4 +788,11 @@ inline void subscribe_media_slider_state(lv_obj_t *btn_ptr,
         media_apply_position(ctx);
       })
   );
+}
+
+inline void subscribe_media_slider_state(lv_obj_t *btn_ptr,
+                                         lv_obj_t *slider,
+                                         const std::string &entity_id) {
+  subscribe_media_slider_ctx(
+    btn_ptr, (SliderCtx *)lv_obj_get_user_data(slider), entity_id);
 }

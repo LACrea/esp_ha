@@ -118,6 +118,7 @@ inline const char *espcontrol_i18n_cs(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "Přehrává se";
   if (std::strcmp(text, "Position") == 0) return "Poloha";
   if (std::strcmp(text, "Pouring") == 0) return "Liják";
+  if (std::strcmp(text, "Power") == 0) return "Napájení";
   if (std::strcmp(text, "Presence") == 0) return "Přítomnost";
   if (std::strcmp(text, "Preset") == 0) return "Předvolba";
   if (std::strcmp(text, "Previous") == 0) return "Předchozí";
@@ -299,6 +300,7 @@ inline const char *espcontrol_i18n_da(const char *text) {
   if (std::strcmp(text, "Play/Pause") == 0) return "Afspil/Pause";
   if (std::strcmp(text, "Playing") == 0) return "Afspiller";
   if (std::strcmp(text, "Pouring") == 0) return "Kraftig regn";
+  if (std::strcmp(text, "Power") == 0) return "Strøm";
   if (std::strcmp(text, "Presence") == 0) return "Tilstedeværelse";
   if (std::strcmp(text, "Preset") == 0) return "Forvalg";
   if (std::strcmp(text, "Previous") == 0) return "Forrige";
@@ -476,6 +478,7 @@ inline const char *espcontrol_i18n_de(const char *text) {
   if (std::strcmp(text, "Play/Pause") == 0) return "Wiedergabe/Pause";
   if (std::strcmp(text, "Playing") == 0) return "Wiedergabe";
   if (std::strcmp(text, "Pouring") == 0) return "Starker Regen";
+  if (std::strcmp(text, "Power") == 0) return "Ein/Aus";
   if (std::strcmp(text, "Presence") == 0) return "Anwesenheit";
   if (std::strcmp(text, "Preset") == 0) return "Voreinstellung";
   if (std::strcmp(text, "Previous") == 0) return "Zurück";
@@ -657,6 +660,7 @@ inline const char *espcontrol_i18n_es(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "Reproduciendo";
   if (std::strcmp(text, "Position") == 0) return "Posición";
   if (std::strcmp(text, "Pouring") == 0) return "Lluvia intensa";
+  if (std::strcmp(text, "Power") == 0) return "Encendido";
   if (std::strcmp(text, "Presence") == 0) return "Presencia";
   if (std::strcmp(text, "Preset") == 0) return "Preajuste";
   if (std::strcmp(text, "Previous") == 0) return "Anterior";
@@ -845,6 +849,7 @@ inline const char *espcontrol_i18n_fi(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "Toistetaan";
   if (std::strcmp(text, "Position") == 0) return "Sijainti";
   if (std::strcmp(text, "Pouring") == 0) return "Rankkasade";
+  if (std::strcmp(text, "Power") == 0) return "Virta";
   if (std::strcmp(text, "Presence") == 0) return "Läsnäolo";
   if (std::strcmp(text, "Preset") == 0) return "Esiasetus";
   if (std::strcmp(text, "Previous") == 0) return "Edellinen";
@@ -1024,6 +1029,7 @@ inline const char *espcontrol_i18n_fr(const char *text) {
   if (std::strcmp(text, "Play/Pause") == 0) return "Lecture/Pause";
   if (std::strcmp(text, "Playing") == 0) return "Lecture";
   if (std::strcmp(text, "Pouring") == 0) return "Pluie forte";
+  if (std::strcmp(text, "Power") == 0) return "Marche/Arrêt";
   if (std::strcmp(text, "Presence") == 0) return "Présence";
   if (std::strcmp(text, "Preset") == 0) return "Préréglage";
   if (std::strcmp(text, "Previous") == 0) return "Précédent";
@@ -1211,6 +1217,7 @@ inline const char *espcontrol_i18n_hu(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "Lejátszás";
   if (std::strcmp(text, "Position") == 0) return "Pozíció";
   if (std::strcmp(text, "Pouring") == 0) return "Szakadó eső";
+  if (std::strcmp(text, "Power") == 0) return "Be/Ki";
   if (std::strcmp(text, "Presence") == 0) return "Jelenlét";
   if (std::strcmp(text, "Preset") == 0) return "Előbeállítás";
   if (std::strcmp(text, "Previous") == 0) return "Előző";
@@ -1400,6 +1407,7 @@ inline const char *espcontrol_i18n_it(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "In riproduzione";
   if (std::strcmp(text, "Position") == 0) return "Posizione";
   if (std::strcmp(text, "Pouring") == 0) return "Pioggia intensa";
+  if (std::strcmp(text, "Power") == 0) return "Accensione";
   if (std::strcmp(text, "Presence") == 0) return "Presenza";
   if (std::strcmp(text, "Previous") == 0) return "Precedente";
   if (std::strcmp(text, "Push") == 0) return "Premi";
@@ -1581,6 +1589,7 @@ inline const char *espcontrol_i18n_nb(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "Spiller";
   if (std::strcmp(text, "Position") == 0) return "Posisjon";
   if (std::strcmp(text, "Pouring") == 0) return "Kraftig regn";
+  if (std::strcmp(text, "Power") == 0) return "Strøm";
   if (std::strcmp(text, "Presence") == 0) return "Tilstedeværelse";
   if (std::strcmp(text, "Preset") == 0) return "Forhåndsvalg";
   if (std::strcmp(text, "Previous") == 0) return "Forrige";
@@ -1764,6 +1773,7 @@ inline const char *espcontrol_i18n_nl(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "Wordt afgespeeld";
   if (std::strcmp(text, "Position") == 0) return "Positie";
   if (std::strcmp(text, "Pouring") == 0) return "Stortregen";
+  if (std::strcmp(text, "Power") == 0) return "Aan/Uit";
   if (std::strcmp(text, "Presence") == 0) return "Aanwezigheid";
   if (std::strcmp(text, "Preset") == 0) return "Voorinstelling";
   if (std::strcmp(text, "Previous") == 0) return "Vorige";
@@ -1943,6 +1953,7 @@ inline const char *espcontrol_i18n_pl(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "Odtwarzanie";
   if (std::strcmp(text, "Position") == 0) return "Pozycja";
   if (std::strcmp(text, "Pouring") == 0) return "Ulewa";
+  if (std::strcmp(text, "Power") == 0) return "Zasilanie";
   if (std::strcmp(text, "Presence") == 0) return "Obecność";
   if (std::strcmp(text, "Previous") == 0) return "Poprzedni";
   if (std::strcmp(text, "Push") == 0) return "Naciśnij";
@@ -2125,6 +2136,7 @@ inline const char *espcontrol_i18n_pt_br(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "Reproduzindo";
   if (std::strcmp(text, "Position") == 0) return "Posição";
   if (std::strcmp(text, "Pouring") == 0) return "Chuva intensa";
+  if (std::strcmp(text, "Power") == 0) return "Ligar/Desligar";
   if (std::strcmp(text, "Presence") == 0) return "Presença";
   if (std::strcmp(text, "Preset") == 0) return "Predefinição";
   if (std::strcmp(text, "Previous") == 0) return "Anterior";
@@ -2307,6 +2319,7 @@ inline const char *espcontrol_i18n_pt(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "A reproduzir";
   if (std::strcmp(text, "Position") == 0) return "Posição";
   if (std::strcmp(text, "Pouring") == 0) return "Chuva intensa";
+  if (std::strcmp(text, "Power") == 0) return "Ligar/Desligar";
   if (std::strcmp(text, "Presence") == 0) return "Presença";
   if (std::strcmp(text, "Preset") == 0) return "Predefinição";
   if (std::strcmp(text, "Previous") == 0) return "Anterior";
@@ -2493,6 +2506,7 @@ inline const char *espcontrol_i18n_ro(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "Redare";
   if (std::strcmp(text, "Position") == 0) return "Poziție";
   if (std::strcmp(text, "Pouring") == 0) return "Ploaie torențială";
+  if (std::strcmp(text, "Power") == 0) return "Pornire";
   if (std::strcmp(text, "Presence") == 0) return "Prezență";
   if (std::strcmp(text, "Preset") == 0) return "Presetare";
   if (std::strcmp(text, "Previous") == 0) return "Anterior";
@@ -2679,6 +2693,7 @@ inline const char *espcontrol_i18n_sk(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "Prehráva sa";
   if (std::strcmp(text, "Position") == 0) return "Poloha";
   if (std::strcmp(text, "Pouring") == 0) return "Lejak";
+  if (std::strcmp(text, "Power") == 0) return "Napájanie";
   if (std::strcmp(text, "Presence") == 0) return "Prítomnosť";
   if (std::strcmp(text, "Preset") == 0) return "Predvoľba";
   if (std::strcmp(text, "Previous") == 0) return "Predchádzajúce";
@@ -2864,6 +2879,7 @@ inline const char *espcontrol_i18n_sl(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "Predvajanje";
   if (std::strcmp(text, "Position") == 0) return "Položaj";
   if (std::strcmp(text, "Pouring") == 0) return "Močan dež";
+  if (std::strcmp(text, "Power") == 0) return "Vklop/Izklop";
   if (std::strcmp(text, "Presence") == 0) return "Prisotnost";
   if (std::strcmp(text, "Preset") == 0) return "Prednastavitev";
   if (std::strcmp(text, "Previous") == 0) return "Prejšnje";
@@ -3047,6 +3063,7 @@ inline const char *espcontrol_i18n_sv(const char *text) {
   if (std::strcmp(text, "Play/Pause") == 0) return "Spela/Pausa";
   if (std::strcmp(text, "Playing") == 0) return "Spelar";
   if (std::strcmp(text, "Pouring") == 0) return "Kraftigt regn";
+  if (std::strcmp(text, "Power") == 0) return "Ström";
   if (std::strcmp(text, "Presence") == 0) return "Närvaro";
   if (std::strcmp(text, "Preset") == 0) return "Förval";
   if (std::strcmp(text, "Previous") == 0) return "Föregående";
@@ -3233,6 +3250,7 @@ inline const char *espcontrol_i18n_tr(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "Oynatılıyor";
   if (std::strcmp(text, "Position") == 0) return "Konum";
   if (std::strcmp(text, "Pouring") == 0) return "Sağanak";
+  if (std::strcmp(text, "Power") == 0) return "Güç";
   if (std::strcmp(text, "Presence") == 0) return "Varlık";
   if (std::strcmp(text, "Preset") == 0) return "Ön ayar";
   if (std::strcmp(text, "Previous") == 0) return "Önceki";
@@ -3426,6 +3444,7 @@ inline const char *espcontrol_i18n_uk(const char *text) {
   if (std::strcmp(text, "Playing") == 0) return "Відтворюється";
   if (std::strcmp(text, "Position") == 0) return "Положення";
   if (std::strcmp(text, "Pouring") == 0) return "Злива";
+  if (std::strcmp(text, "Power") == 0) return "Живлення";
   if (std::strcmp(text, "Presence") == 0) return "Присутність";
   if (std::strcmp(text, "Preset") == 0) return "Пресет";
   if (std::strcmp(text, "Previous") == 0) return "Назад";
