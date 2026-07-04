@@ -26,6 +26,10 @@ struct MediaTvNowPlayingCtx {
   bool playing = false;
   bool available = true;
   std::string player_state;
+  // Card-lifetime seek/position state. The modal attaches its transient
+  // widgets to this context on open and detaches them on close, so the
+  // HA subscriptions registered at grid build never touch dead widgets.
+  SliderCtx *progress_ctx = nullptr;
   std::function<void()> suspend_display_takeover;
   std::function<void()> resume_display_takeover;
 };
@@ -125,6 +129,7 @@ inline void media_tv_refresh_tile_layout(MediaTvNowPlayingCtx *ctx, lv_coord_t p
   const bool large = media_tv_tile_large(ctx);
   const bool show_icon = ctx->idle || wide;
   lv_coord_t text_inset = pad;
+  lv_coord_t title_y = pad;
   lv_coord_t icon_w = 0;
 
   if (ctx->icon_lbl) {
@@ -137,6 +142,11 @@ inline void media_tv_refresh_tile_layout(MediaTvNowPlayingCtx *ctx, lv_coord_t p
         text_inset = pad + icon_w + pad;
       } else {
         lv_obj_align(ctx->icon_lbl, LV_ALIGN_TOP_LEFT, pad, pad);
+        lv_coord_t icon_h = lv_obj_get_height(ctx->icon_lbl);
+        if (icon_h <= 0 && ctx->icon_font) {
+          icon_h = lv_font_get_line_height(ctx->icon_font);
+        }
+        title_y = pad + icon_h + 4;
       }
     } else {
       lv_obj_add_flag(ctx->icon_lbl, LV_OBJ_FLAG_HIDDEN);
@@ -147,26 +157,36 @@ inline void media_tv_refresh_tile_layout(MediaTvNowPlayingCtx *ctx, lv_coord_t p
   if (text_width < 1) text_width = lv_pct(100);
 
   if (ctx->title_lbl) {
-    if (ctx->title_font) lv_obj_set_style_text_font(ctx->title_lbl, ctx->title_font, LV_PART_MAIN);
-    if (wide || large) {
-      lv_label_set_long_mode(ctx->title_lbl, LV_LABEL_LONG_WRAP);
-      lv_obj_set_width(ctx->title_lbl, text_width);
-      lv_coord_t title_h = large ? LV_SIZE_CONTENT : (ctx->title_font
-        ? ctx->title_font->line_height * 2 : LV_SIZE_CONTENT);
-      if (title_h != LV_SIZE_CONTENT) lv_obj_set_height(ctx->title_lbl, title_h);
-      lv_obj_align(ctx->title_lbl, LV_ALIGN_TOP_LEFT, text_inset, pad);
-    } else {
-      lv_label_set_long_mode(ctx->title_lbl, LV_LABEL_LONG_DOT);
-      const lv_font_t *font = ctx->title_font
-        ? ctx->title_font : lv_obj_get_style_text_font(ctx->title_lbl, LV_PART_MAIN);
-      int lines = ctx->row_span >= CARD_SIZE_TALL_ROW_SPAN ? 2 : 1;
-      if (font && font->line_height > 0) {
-        lv_obj_set_size(ctx->title_lbl, text_width, font->line_height * lines - 1);
-      } else {
-        lv_obj_set_width(ctx->title_lbl, text_width);
-      }
-      lv_obj_align(ctx->title_lbl, LV_ALIGN_TOP_LEFT, text_inset, pad);
+    // Large tiles keep the big media title font; everything else drops to the
+    // standard text font so the title cannot crowd the subtitle row.
+    const lv_font_t *tile_title_font = large
+      ? ctx->title_font
+      : (ctx->subtitle_font ? ctx->subtitle_font : ctx->title_font);
+    if (tile_title_font) {
+      lv_obj_set_style_text_font(ctx->title_lbl, tile_title_font, LV_PART_MAIN);
     }
+    const lv_font_t *resolved_font = tile_title_font
+      ? tile_title_font : lv_obj_get_style_text_font(ctx->title_lbl, LV_PART_MAIN);
+    lv_coord_t title_lh = resolved_font ? lv_font_get_line_height(resolved_font) : 16;
+    const lv_font_t *sub_font = ctx->subtitle_font
+      ? ctx->subtitle_font
+      : (ctx->subtitle_lbl
+           ? lv_obj_get_style_text_font(ctx->subtitle_lbl, LV_PART_MAIN) : nullptr);
+    lv_coord_t sub_lh = sub_font ? lv_font_get_line_height(sub_font) : 16;
+
+    // Clamp the title line count to what physically fits above the subtitle.
+    lv_coord_t avail = lv_obj_get_height(ctx->btn) - title_y - pad - sub_lh - 4;
+    int lines = large ? 3
+      : (wide || ctx->row_span >= CARD_SIZE_TALL_ROW_SPAN) ? 2 : 1;
+    if (title_lh > 0) {
+      int fit = avail > 0 ? (int)(avail / title_lh) : 1;
+      if (fit < 1) fit = 1;
+      if (lines > fit) lines = fit;
+    }
+    lv_label_set_long_mode(ctx->title_lbl, LV_LABEL_LONG_DOT);
+    lv_obj_set_size(ctx->title_lbl, text_width,
+                    title_lh > 0 ? title_lh * lines - 1 : LV_SIZE_CONTENT);
+    lv_obj_align(ctx->title_lbl, LV_ALIGN_TOP_LEFT, text_inset, title_y);
     lv_obj_move_foreground(ctx->title_lbl);
   }
 
@@ -192,6 +212,14 @@ inline void media_tv_update_idle_state(MediaTvNowPlayingCtx *ctx, const std::str
   media_tv_refresh_tile_layout(ctx, lv_obj_get_style_radius(ctx->btn, LV_PART_MAIN) + 4);
 }
 
+inline std::string media_tv_clean_text(esphome::StringRef value) {
+  std::string text = string_ref_limited(value, HA_STATE_TEXT_MAX_LEN);
+  if (text == "unknown" || text == "unavailable" || text == "None" || text == "none") {
+    text.clear();
+  }
+  return text;
+}
+
 inline void media_tv_update_metadata(MediaTvNowPlayingCtx *ctx) {
   if (!ctx) return;
   ctx->idle = media_tv_player_idle(ctx->player_state) ||
@@ -201,10 +229,39 @@ inline void media_tv_update_metadata(MediaTvNowPlayingCtx *ctx) {
   media_tv_refresh_tile_layout(ctx, lv_obj_get_style_radius(ctx->btn, LV_PART_MAIN) + 4);
 }
 
+// Re-fetch the artist (falling back to the app name) from scratch. Needed on
+// title changes because HA never fires the media_artist subscription when the
+// new item simply has no artist attribute (e.g. YouTube -> live TV).
+inline void media_tv_refresh_subtitle(MediaTvNowPlayingCtx *ctx) {
+  if (!ctx || ctx->entity_id.empty()) return;
+  ha_get_attribute(
+    ctx->entity_id, std::string("media_artist"),
+    std::function<void(esphome::StringRef)>(
+      [ctx](esphome::StringRef artist) {
+        ctx->subtitle_text = media_tv_clean_text(artist);
+        if (ctx->subtitle_text.empty()) {
+          ha_get_attribute(
+            ctx->entity_id, std::string("app_name"),
+            std::function<void(esphome::StringRef)>(
+              [ctx](esphome::StringRef app) {
+                ctx->subtitle_text = media_tv_clean_text(app);
+                media_tv_update_metadata(ctx);
+              })
+          );
+        } else {
+          media_tv_update_metadata(ctx);
+        }
+      })
+  );
+}
+
 inline void media_tv_hide_modal() {
   MediaTvModalUi &ui = media_tv_modal_ui();
-  if (ui.progress_ctx && ui.progress_ctx->media_timer) {
-    lv_timer_pause(ui.progress_ctx->media_timer);
+  if (ui.progress_ctx) {
+    if (ui.progress_ctx->media_timer) lv_timer_pause(ui.progress_ctx->media_timer);
+    ui.progress_ctx->media_slider = nullptr;
+    ui.progress_ctx->fill = nullptr;
+    ui.progress_ctx->media_value_lbl = nullptr;
   }
   control_modal_delete_overlay(ControlModalKind::MEDIA_TV, ui.overlay);
   ui = MediaTvModalUi();
@@ -237,7 +294,14 @@ inline lv_obj_t *media_tv_create_modal_slider_row(lv_obj_t *panel, MediaTvNowPla
   lv_obj_set_flex_grow(track, 1);
   lv_obj_clear_flag(track, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_clear_flag(track, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_set_style_bg_opa(track, LV_OPA_TRANSP, LV_PART_MAIN);
+  // The modal panel itself is DARK_BACKGROUND_TERTIARY, so the rail needs the
+  // lighter control grey to be visible.
+  lv_obj_set_style_bg_color(track, lv_color_hex(DARK_CONTROL_NEUTRAL), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(track, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_radius(track, 7, LV_PART_MAIN);
+  // Let the knob extend beyond the 14px rail instead of being clipped.
+  lv_obj_add_flag(track, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+  lv_obj_add_flag(ui.progress_row, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
   lv_obj_set_style_border_width(track, 0, LV_PART_MAIN);
   lv_obj_set_style_pad_all(track, 0, LV_PART_MAIN);
 
@@ -249,17 +313,24 @@ inline lv_obj_t *media_tv_create_modal_slider_row(lv_obj_t *panel, MediaTvNowPla
   }
 
   ui.progress_slider = setup_slider_widget(track, ctx->accent_color, true);
-  ui.progress_ctx = new SliderCtx();
-  ui.progress_ctx->entity_id = ctx->entity_id;
+  if (ui.progress_slider) {
+    lv_obj_set_style_bg_opa(ui.progress_slider, LV_OPA_COVER,
+      static_cast<lv_style_selector_t>(LV_PART_KNOB));
+    lv_obj_set_style_bg_color(ui.progress_slider, lv_color_hex(ctx->secondary_color),
+      static_cast<lv_style_selector_t>(LV_PART_KNOB));
+    lv_obj_set_style_radius(ui.progress_slider, LV_RADIUS_CIRCLE,
+      static_cast<lv_style_selector_t>(LV_PART_KNOB));
+    lv_obj_set_style_width(ui.progress_slider, 22,
+      static_cast<lv_style_selector_t>(LV_PART_KNOB));
+    lv_obj_set_style_height(ui.progress_slider, 22,
+      static_cast<lv_style_selector_t>(LV_PART_KNOB));
+    lv_obj_add_flag(ui.progress_slider, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
+    lv_obj_set_ext_click_area(ui.progress_slider, 16);
+  }
+  ui.progress_ctx = ctx->progress_ctx;
   ui.progress_ctx->fill = lv_obj_get_child(track, 0);
-  ui.progress_ctx->horizontal = true;
-  ui.progress_ctx->cover_tilt = false;
-  ui.progress_ctx->inverted = false;
-  ui.progress_ctx->radius = 6;
-  ui.progress_ctx->media_position = true;
   ui.progress_ctx->media_slider = ui.progress_slider;
   ui.progress_ctx->media_value_lbl = ui.elapsed_lbl;
-  ui.progress_ctx->interactive = true;
   lv_obj_set_user_data(ui.progress_slider, (void *)ui.progress_ctx);
   slider_bind_geometry_refresh(track, ui.progress_slider);
 
@@ -291,8 +362,9 @@ inline lv_obj_t *media_tv_create_modal_slider_row(lv_obj_t *panel, MediaTvNowPla
     send_media_seek_action(slider_ctx->entity_id, val, slider_ctx->media_duration);
   }, LV_EVENT_RELEASED, nullptr);
 
-  ui.progress_ctx->media_timer = lv_timer_create(media_position_timer_cb, 1000, ui.progress_ctx);
-  if (ui.progress_ctx->media_timer) lv_timer_pause(ui.progress_ctx->media_timer);
+  if (ui.progress_ctx->media_timer && ui.progress_ctx->media_playing) {
+    lv_timer_resume(ui.progress_ctx->media_timer);
+  }
 
   return ui.progress_row;
 }
@@ -479,26 +551,10 @@ inline void media_tv_now_playing_open_modal(MediaTvNowPlayingCtx *ctx) {
     }
   }, LV_EVENT_CLICKED, nullptr);
 
-  if (ui.progress_slider && ui.progress_ctx) {
-    subscribe_media_slider_state(ui.panel, ui.progress_slider, ctx->entity_id);
-    ha_subscribe_attribute(
-      ctx->entity_id, std::string("media_duration"),
-      std::function<void(esphome::StringRef)>(
-        [ctx](esphome::StringRef val) {
-          float duration = 0.0f;
-          if (!parse_float_ref(val, duration) || duration < 0.0f) duration = 0.0f;
-          MediaTvModalUi &modal_ui = media_tv_modal_ui();
-          if (modal_ui.progress_ctx) {
-            modal_ui.progress_ctx->media_duration = duration;
-            if (modal_ui.duration_lbl) {
-              char dur_buf[16];
-              media_format_time(duration, dur_buf, sizeof(dur_buf));
-              lv_label_set_text(modal_ui.duration_lbl, dur_buf);
-            }
-            media_tv_apply_modal_content(ctx);
-          }
-        })
-    );
+  if (ui.progress_ctx && ui.duration_lbl && ui.progress_ctx->media_duration > 0.0f) {
+    char dur_buf[16];
+    media_format_time(ui.progress_ctx->media_duration, dur_buf, sizeof(dur_buf));
+    lv_label_set_text(ui.duration_lbl, dur_buf);
   }
 
   media_tv_apply_modal_content(ctx);
@@ -538,6 +594,18 @@ inline MediaTvNowPlayingCtx *create_media_tv_now_playing_context(
   ctx->suspend_display_takeover = suspend_display_takeover;
   ctx->resume_display_takeover = resume_display_takeover;
 
+  ctx->progress_ctx = new SliderCtx();
+  ctx->progress_ctx->entity_id = p.entity;
+  ctx->progress_ctx->horizontal = true;
+  ctx->progress_ctx->cover_tilt = false;
+  ctx->progress_ctx->inverted = false;
+  ctx->progress_ctx->radius = 6;
+  ctx->progress_ctx->media_position = true;
+  ctx->progress_ctx->interactive = true;
+  ctx->progress_ctx->media_timer =
+    lv_timer_create(media_position_timer_cb, 1000, ctx->progress_ctx);
+  if (ctx->progress_ctx->media_timer) lv_timer_pause(ctx->progress_ctx->media_timer);
+
   if (s.icon_lbl) {
     lv_obj_clear_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(s.icon_lbl, media_default_icon("tv_now_playing", p.icon));
@@ -563,18 +631,42 @@ inline void subscribe_media_tv_now_playing_state(MediaTvNowPlayingCtx *ctx) {
         std::string state_text = string_ref_limited(state, HA_SHORT_STATE_MAX_LEN);
         ctx->available = !ha_state_unavailable_ref(state);
         apply_control_availability(ctx->btn, ctx->btn, ctx->available);
-        if (!ctx->available) media_tv_hide_modal();
+        if (!ctx->available && media_tv_modal_ui().active == ctx) media_tv_hide_modal();
         ctx->playing = state_text == "playing";
         media_tv_update_idle_state(ctx, state_text);
+      })
+  );
+  subscribe_media_slider_ctx(ctx->btn, ctx->progress_ctx, ctx->entity_id);
+  ha_subscribe_attribute(
+    ctx->entity_id, std::string("media_duration"),
+    std::function<void(esphome::StringRef)>(
+      [ctx](esphome::StringRef) {
+        // subscribe_media_slider_ctx already stored the parsed duration on
+        // ctx->progress_ctx; here we only refresh the open modal's duration
+        // label and seek-row visibility.
+        MediaTvModalUi &ui = media_tv_modal_ui();
+        if (ui.active != ctx) return;
+        if (ui.duration_lbl && ctx->progress_ctx &&
+            ctx->progress_ctx->media_duration > 0.0f) {
+          char dur_buf[16];
+          media_format_time(ctx->progress_ctx->media_duration, dur_buf, sizeof(dur_buf));
+          lv_label_set_text(ui.duration_lbl, dur_buf);
+        }
+        media_tv_apply_modal_content(ctx);
       })
   );
   ha_subscribe_attribute(
     ctx->entity_id, std::string("media_title"),
     std::function<void(esphome::StringRef)>(
       [ctx](esphome::StringRef title) {
-        ctx->title_text = string_ref_limited(title, HA_STATE_TEXT_MAX_LEN);
-        if (ctx->title_text == "unknown" || ctx->title_text == "unavailable") {
-          ctx->title_text.clear();
+        std::string new_title = media_tv_clean_text(title);
+        bool changed = new_title != ctx->title_text;
+        ctx->title_text = new_title;
+        if (changed) {
+          // Drop the previous item's artist right away so it can never
+          // linger, then re-resolve it for the new item.
+          ctx->subtitle_text.clear();
+          media_tv_refresh_subtitle(ctx);
         }
         media_tv_update_metadata(ctx);
       })
@@ -583,19 +675,13 @@ inline void subscribe_media_tv_now_playing_state(MediaTvNowPlayingCtx *ctx) {
     ctx->entity_id, std::string("media_artist"),
     std::function<void(esphome::StringRef)>(
       [ctx](esphome::StringRef artist) {
-        ctx->subtitle_text = string_ref_limited(artist, HA_STATE_TEXT_MAX_LEN);
-        if (ctx->subtitle_text == "unknown" || ctx->subtitle_text == "unavailable") {
-          ctx->subtitle_text.clear();
-        }
+        ctx->subtitle_text = media_tv_clean_text(artist);
         if (ctx->subtitle_text.empty()) {
           ha_get_attribute(
             ctx->entity_id, std::string("app_name"),
             std::function<void(esphome::StringRef)>(
               [ctx](esphome::StringRef app) {
-                ctx->subtitle_text = string_ref_limited(app, HA_STATE_TEXT_MAX_LEN);
-                if (ctx->subtitle_text == "unknown" || ctx->subtitle_text == "unavailable") {
-                  ctx->subtitle_text.clear();
-                }
+                ctx->subtitle_text = media_tv_clean_text(app);
                 media_tv_update_metadata(ctx);
               })
           );
