@@ -469,14 +469,29 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
     return;
   }
   if (p.type == "media") {
-    setup_media_card(s, p,
-      palette.has_on ? palette.on_val : DEFAULT_SLIDER_COLOR,
-      palette.has_off ? palette.off_val : DEFAULT_OFF_COLOR,
-      palette.has_sensor_color ? palette.sensor_val : DEFAULT_TERTIARY_COLOR,
-      display_sensor_font(display),
-      display_media_title_font(display),
-      display_main_width_percent(display),
-      row_span, col_span);
+    if (media_card_mode(p.sensor) == "tv_now_playing") {
+      setup_media_tv_now_playing_card(
+        s, p,
+        palette.has_on ? palette.on_val : DEFAULT_SLIDER_COLOR,
+        palette.has_off ? palette.off_val : DEFAULT_OFF_COLOR,
+        palette.has_sensor_color ? palette.sensor_val : DEFAULT_TERTIARY_COLOR,
+        display_media_title_font(display),
+        lv_obj_get_style_text_font(s.text_lbl, LV_PART_MAIN),
+        display_icon_font(display),
+        display_media_title_font(display),
+        display_main_width_percent(display),
+        row_span, col_span,
+        cfg.suspend_display_takeover, cfg.resume_display_takeover);
+    } else {
+      setup_media_card(s, p,
+        palette.has_on ? palette.on_val : DEFAULT_SLIDER_COLOR,
+        palette.has_off ? palette.off_val : DEFAULT_OFF_COLOR,
+        palette.has_sensor_color ? palette.sensor_val : DEFAULT_TERTIARY_COLOR,
+        display_sensor_font(display),
+        display_media_title_font(display),
+        display_main_width_percent(display),
+        row_span, col_span);
+    }
     return;
   }
   if (p.type == "climate") {
@@ -603,10 +618,16 @@ inline LockCardCtx *bind_lock_status_card(BtnSlot &s, const ParsedCfg &p) {
 
 inline void refresh_media_card_layout(BtnSlot &s, const ParsedCfg &p,
                                       const GridConfig &cfg,
-                                      int row_span = 1) {
+                                      int row_span = 1,
+                                      int col_span = 1) {
   const DisplayProfile display = display_profile_from_grid_config(cfg);
   std::string mode = media_card_mode(p.sensor);
   lv_coord_t pad = lv_obj_get_style_radius(s.btn, LV_PART_MAIN) + 4;
+
+  if (mode == "tv_now_playing") {
+    refresh_media_tv_now_playing_layout(s, p, display, row_span, col_span);
+    return;
+  }
 
   if (mode == "now_playing") {
     MediaNowPlayingCtx *ctx = (MediaNowPlayingCtx *)lv_obj_get_user_data(s.sensor_container);
@@ -723,7 +744,7 @@ inline void refresh_card_layout(BtnSlot &s, const ParsedCfg &p,
       image_card_align_icon(s.icon_lbl, s.btn);
     }
   } else if (p.type == "media") {
-    refresh_media_card_layout(s, p, cfg, row_span);
+    refresh_media_card_layout(s, p, cfg, row_span, col_span);
   } else if (brightness_slider_type(p.type) || p.type == "light_temperature" ||
              (p.type == "cover" && !cover_modal_mode(p.sensor) &&
               !cover_command_mode(p.sensor) && !cover_toggle_mode(p.sensor))) {
@@ -1253,6 +1274,9 @@ inline void grid_phase2(
         } else if (mode == "now_playing") {
           MediaNowPlayingCtx *ctx = (MediaNowPlayingCtx *)lv_obj_get_user_data(s.sensor_container);
           subscribe_media_now_playing_state(ctx, p.entity);
+        } else if (mode == "tv_now_playing") {
+          MediaTvNowPlayingCtx *ctx = (MediaTvNowPlayingCtx *)lv_obj_get_user_data(s.sensor_container);
+          subscribe_media_tv_now_playing_state(ctx);
         } else {
           lv_obj_t *slider = (lv_obj_t *)lv_obj_get_user_data(s.sensor_container);
           if (slider) subscribe_media_slider_state(s.btn, slider, p.entity);
@@ -1947,6 +1971,13 @@ inline void grid_phase2(
                 if (c) send_media_playback_action(c->entity, "play_pause");
               }, LV_EVENT_CLICKED, click_ctx);
             }
+          } else if (mode == "tv_now_playing") {
+            MediaTvNowPlayingCtx *ctx = (MediaTvNowPlayingCtx *)lv_obj_get_user_data(sub_slot.sensor_container);
+            subscribe_media_tv_now_playing_state(ctx);
+            lv_obj_add_event_cb(sb_btn, [](lv_event_t *e) {
+              MediaTvNowPlayingCtx *c = (MediaTvNowPlayingCtx *)lv_event_get_user_data(e);
+              if (c) media_tv_now_playing_open_modal(c);
+            }, LV_EVENT_CLICKED, ctx);
           } else {
             lv_obj_t *media_slider = (lv_obj_t *)lv_obj_get_user_data(sub_slot.sensor_container);
             if (media_slider) subscribe_media_slider_state(sub_slot.btn, media_slider, sb_cfg.entity);

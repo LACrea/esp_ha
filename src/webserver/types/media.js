@@ -59,6 +59,7 @@ var MEDIA_CARD_METADATA = {
       ["volume", "Volume Button"],
       ["position", "Track Position"],
       ["now_playing", "Now Playing"],
+      ["tv_now_playing", "TV Now Playing"],
     ],
     value: function (b) {
       return mediaEditorValidMode(b.sensor);
@@ -133,6 +134,7 @@ registerButtonType("media", {
       if (mode === "volume") return "Volume High";
       if (mode === "position") return "Progress Clock";
       if (mode === "now_playing") return "Music";
+      if (mode === "tv_now_playing") return "Television";
       return "Play Pause";
     }
 
@@ -167,6 +169,9 @@ registerButtonType("media", {
           if (b.sensor === "now_playing") {
             b.precision = mediaNowPlayingControls(b);
             helpers.saveField("precision", b.precision);
+          } else if (b.sensor === "tv_now_playing") {
+            b.precision = "";
+            helpers.saveField("precision", "");
           } else if (b.sensor === "play_pause" || b.sensor === "position") {
             b.precision = b.precision === "state" ? "state" : "";
             helpers.saveField("precision", b.precision);
@@ -209,6 +214,7 @@ registerButtonType("media", {
     b.unit = "";
     b.precision = b.sensor === "now_playing"
       ? mediaNowPlayingControls(b)
+      : b.sensor === "tv_now_playing" ? ""
       : ((b.sensor === "play_pause" || b.sensor === "position") && b.precision === "state" ? "state" : "");
     b.icon_on = "Auto";
     var normalizedOptions = normalizeMediaOptions(b.options, b.sensor);
@@ -337,6 +343,7 @@ registerButtonType("media", {
     }
 
     if (b.sensor !== "play_pause" && b.sensor !== "now_playing" &&
+        b.sensor !== "tv_now_playing" &&
         b.sensor !== "position" && b.sensor !== "volume") {
       helpers.renderCardIconPicker(panel, b, helpers, {
         pickerIdSuffix: "icon-picker",
@@ -354,6 +361,7 @@ registerButtonType("media", {
       if (value === "volume") return { mode: "volume", label: "Volume", icon: "volume-high" };
       if (value === "position") return { mode: "position", label: "Position", icon: "progress-clock" };
       if (value === "now_playing") return { mode: "now_playing", label: "Now Playing", icon: "music" };
+      if (value === "tv_now_playing") return { mode: "tv_now_playing", label: "TV Now Playing", icon: "television" };
       return { mode: "play_pause", label: "Play/Pause", icon: "play-pause" };
     }
     var info = modeInfo(mediaEditorValidMode(b.sensor));
@@ -400,6 +408,17 @@ registerButtonType("media", {
           progressBg + '<span class="sp-media-now-title">Midnight City</span>',
         labelHtml:
           '<span class="sp-btn-label-row"><span class="sp-btn-label sp-media-now-artist">M83</span>' +
+          '<span class="sp-type-badge mdi mdi-' + MEDIA_CARD_METADATA.preview.badge + '"></span></span>',
+      };
+    }
+    if (mode === "tv_now_playing") {
+      var tvLabel = (b.label && b.label.trim()) || "Living Room";
+      return {
+        iconHtml:
+          '<span class="sp-btn-icon mdi mdi-television sp-media-tv-icon"></span>' +
+          '<span class="sp-media-now-title">Apple TV</span>',
+        labelHtml:
+          '<span class="sp-btn-label-row"><span class="sp-btn-label sp-media-now-artist">YouTube</span>' +
           '<span class="sp-type-badge mdi mdi-' + MEDIA_CARD_METADATA.preview.badge + '"></span></span>',
       };
     }

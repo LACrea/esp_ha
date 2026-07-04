@@ -907,7 +907,8 @@ var CARD_CONTRACT_CARDS = {
           "next",
           "volume",
           "position",
-          "now_playing"
+          "now_playing",
+          "tv_now_playing"
         ],
         "defaultValue": "play_pause"
       },

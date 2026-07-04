@@ -2403,6 +2403,7 @@ inline const char *media_default_icon(const std::string &mode,
   if (mode == "volume") return find_icon("Volume High");
   if (mode == "position") return find_icon("Progress Clock");
   if (mode == "now_playing") return find_icon("Music");
+  if (mode == "tv_now_playing") return find_icon("Television");
   return find_icon("Play Pause");
 }
 

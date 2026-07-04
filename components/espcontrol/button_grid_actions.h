@@ -508,6 +508,8 @@ inline void handle_button_press(const std::string &cfg, int slot_num,
 
 struct MediaVolumeCtx;
 inline void media_volume_open_modal(MediaVolumeCtx *ctx);
+struct MediaTvNowPlayingCtx;
+inline void media_tv_now_playing_open_modal(MediaTvNowPlayingCtx *ctx);
 struct ClimateControlCtx;
 inline void climate_control_open_modal(ClimateControlCtx *ctx);
 struct ImageCardCtx;
@@ -647,6 +649,9 @@ inline void handle_button_click(const std::string &cfg, int slot_num,
     if (mode == "volume") {
       MediaVolumeCtx *ctx = (MediaVolumeCtx *)lv_obj_get_user_data(btn_obj);
       if (ctx) media_volume_open_modal(ctx);
+    } else if (mode == "tv_now_playing") {
+      MediaTvNowPlayingCtx *ctx = (MediaTvNowPlayingCtx *)lv_obj_get_user_data(btn_obj);
+      if (ctx) media_tv_now_playing_open_modal(ctx);
     } else if (mode == "now_playing" && p.precision == "play_pause") {
       send_media_playback_action(p.entity, "play_pause");
     } else if (media_playback_button_mode(mode)) {

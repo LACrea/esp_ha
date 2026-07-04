@@ -933,6 +933,8 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     if (p.sensor == "position" && (p.label.empty() || p.label == "Track")) p.label = "Position";
     if (p.sensor == "now_playing") {
       p.precision = card_runtime_media_now_playing_control(p.precision) ? p.precision : "";
+    } else if (p.sensor == "tv_now_playing") {
+      p.precision.clear();
     } else if (card_runtime_media_state_display_mode(p.sensor) && p.precision == "state") {
       p.precision = "state";
     } else {
