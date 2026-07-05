@@ -30,6 +30,11 @@ struct MediaTvNowPlayingCtx {
   // widgets to this context on open and detaches them on close, so the
   // HA subscriptions registered at grid build never touch dead widgets.
   SliderCtx *progress_ctx = nullptr;
+  // Album art: one downloader instance shared by all TV cards is enough
+  // because art is only fetched while a single modal is open.
+  esphome::artwork_image::ArtworkImage *art_image = nullptr;
+  std::function<std::string()> art_base_url;
+  std::string art_picture;
   std::function<void()> suspend_display_takeover;
   std::function<void()> resume_display_takeover;
 };
@@ -38,6 +43,9 @@ struct MediaTvModalUi {
   lv_obj_t *overlay = nullptr;
   lv_obj_t *panel = nullptr;
   lv_obj_t *back_btn = nullptr;
+  lv_obj_t *art_widget = nullptr;
+  lv_coord_t art_side = 0;         // desired art size from the panel dimensions
+  lv_coord_t art_render_side = 0;  // actual size after fitting around the controls
   lv_obj_t *title_lbl = nullptr;
   lv_obj_t *subtitle_lbl = nullptr;
   lv_obj_t *progress_row = nullptr;
@@ -113,6 +121,9 @@ inline void media_tv_apply_modal_content(MediaTvNowPlayingCtx *ctx) {
     media_tv_set_label_text(ui.subtitle_lbl, ctx->subtitle_text);
   }
   media_tv_refresh_play_button(ctx);
+  if (ui.art_widget && ctx->idle) {
+    lv_obj_add_flag(ui.art_widget, LV_OBJ_FLAG_HIDDEN);
+  }
   if (ui.progress_row && ui.progress_ctx) {
     bool show = ui.progress_ctx->media_duration > 0.0f;
     if (show) lv_obj_clear_flag(ui.progress_row, LV_OBJ_FLAG_HIDDEN);
@@ -229,6 +240,63 @@ inline void media_tv_update_metadata(MediaTvNowPlayingCtx *ctx) {
   media_tv_refresh_tile_layout(ctx, lv_obj_get_style_radius(ctx->btn, LV_PART_MAIN) + 4);
 }
 
+inline std::string media_tv_join_art_url(const std::string &base, const std::string &path) {
+  if (path.empty()) return "";
+  if (path.rfind("http://", 0) == 0 || path.rfind("https://", 0) == 0) return path;
+  if (base.empty() || path[0] != '/') return "";
+  return base + path;
+}
+
+inline void media_tv_set_art_source(lv_obj_t *widget,
+                                    esphome::artwork_image::ArtworkImage *image) {
+  if (!widget || !image) return;
+#if ESPHOME_VERSION_CODE >= VERSION_CODE(2026, 4, 0)
+  lv_image_set_src(widget, image->get_lv_image_dsc());
+#else
+  lv_img_set_src(widget, image->get_lv_img_dsc());
+#endif
+  lv_obj_clear_flag(widget, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_invalidate(widget);
+}
+
+// Fetch (or hide) the modal art for the active card's current entity_picture.
+inline void media_tv_request_art(MediaTvNowPlayingCtx *ctx) {
+  MediaTvModalUi &ui = media_tv_modal_ui();
+  if (!ctx || ui.active != ctx || !ui.art_widget) return;
+  std::string base = ctx->art_base_url ? ctx->art_base_url() : std::string();
+  std::string url = media_tv_join_art_url(base, ctx->art_picture);
+  if (!ctx->art_image || url.empty() || ctx->idle) {
+    lv_obj_add_flag(ui.art_widget, LV_OBJ_FLAG_HIDDEN);
+    media_tv_layout_modal(ctx);
+    return;
+  }
+  int side = ui.art_render_side > 0 ? (int)ui.art_render_side
+    : (ui.art_side > 0 ? (int)ui.art_side : 200);
+  ctx->art_image->set_resize_mode(esphome::artwork_image::ImageResizeMode::COVER);
+  ctx->art_image->set_target_size(side, side);
+  ctx->art_image->request_update_url(url, side * 2);
+}
+
+inline void media_tv_register_art_callback(MediaTvNowPlayingCtx *ctx) {
+  static bool registered = false;
+  if (registered || !ctx || !ctx->art_image) return;
+  registered = true;
+  // The bool means "served from cache" (HTTP 304), not success; failures
+  // arrive on the separate error callback below.
+  ctx->art_image->add_on_finished_callback([](bool) {
+    MediaTvModalUi &ui = media_tv_modal_ui();
+    if (!ui.active || !ui.art_widget || !ui.active->art_image) return;
+    media_tv_set_art_source(ui.art_widget, ui.active->art_image);
+    media_tv_layout_modal(ui.active);
+  });
+  ctx->art_image->add_on_error_callback([]() {
+    MediaTvModalUi &ui = media_tv_modal_ui();
+    if (!ui.active || !ui.art_widget) return;
+    lv_obj_add_flag(ui.art_widget, LV_OBJ_FLAG_HIDDEN);
+    media_tv_layout_modal(ui.active);
+  });
+}
+
 // Re-fetch the artist (falling back to the app name) from scratch. Needed on
 // title changes because HA never fires the media_artist subscription when the
 // new item simply has no artist attribute (e.g. YouTube -> live TV).
@@ -263,8 +331,14 @@ inline void media_tv_hide_modal() {
     ui.progress_ctx->fill = nullptr;
     ui.progress_ctx->media_value_lbl = nullptr;
   }
+  esphome::artwork_image::ArtworkImage *art =
+    ui.active ? ui.active->art_image : nullptr;
   control_modal_delete_overlay(ControlModalKind::MEDIA_TV, ui.overlay);
   ui = MediaTvModalUi();
+  if (art) {
+    art->cancel_update();
+    art->release();
+  }
 }
 
 inline lv_obj_t *media_tv_create_modal_slider_row(lv_obj_t *panel, MediaTvNowPlayingCtx *ctx,
@@ -405,15 +479,35 @@ inline void media_tv_layout_modal(MediaTvNowPlayingCtx *ctx) {
 
   bool progress_visible =
     ui.progress_row && !lv_obj_has_flag(ui.progress_row, LV_OBJ_FLAG_HIDDEN);
-  lv_coord_t total_h = 0;
-  if (ui.title_lbl) total_h += lv_obj_get_height(ui.title_lbl) + 6;
-  if (ui.subtitle_lbl) total_h += lv_obj_get_height(ui.subtitle_lbl) + layout.title_gap;
-  if (progress_visible) total_h += lv_obj_get_height(ui.progress_row) + layout.title_gap;
-  if (ui.transport_row) total_h += lv_obj_get_height(ui.transport_row) + layout.controls_gap;
-  if (ui.volume_row) total_h += lv_obj_get_height(ui.volume_row);
+  lv_coord_t content_h = 0;
+  if (ui.title_lbl) content_h += lv_obj_get_height(ui.title_lbl) + 6;
+  if (ui.subtitle_lbl) content_h += lv_obj_get_height(ui.subtitle_lbl) + layout.title_gap;
+  if (progress_visible) content_h += lv_obj_get_height(ui.progress_row) + layout.title_gap;
+  if (ui.transport_row) content_h += lv_obj_get_height(ui.transport_row) + layout.controls_gap;
+  if (ui.volume_row) content_h += lv_obj_get_height(ui.volume_row);
+
+  // The art gets whatever vertical space the controls leave over; it shrinks
+  // (or disappears) rather than pushing the volume row out of the panel.
+  lv_coord_t max_total = layout.panel_h - y - layout.inset;
+  lv_coord_t art_room = max_total - content_h - layout.title_gap;
+  lv_coord_t art_side = ui.art_side < art_room ? ui.art_side : art_room;
+  bool art_fits = art_side >= 96;
+  ui.art_render_side = art_fits ? art_side : 0;
+  if (ui.art_widget && !art_fits) {
+    lv_obj_add_flag(ui.art_widget, LV_OBJ_FLAG_HIDDEN);
+  }
+  bool art_visible = ui.art_widget && art_fits &&
+                     !lv_obj_has_flag(ui.art_widget, LV_OBJ_FLAG_HIDDEN);
+  if (art_visible) lv_obj_set_size(ui.art_widget, art_side, art_side);
+
+  lv_coord_t total_h = content_h + (art_visible ? art_side + layout.title_gap : 0);
   lv_coord_t centered_y = (layout.panel_h - total_h) / 2;
   if (centered_y > y) y = centered_y;
 
+  if (art_visible) {
+    lv_obj_align(ui.art_widget, LV_ALIGN_TOP_MID, 0, y);
+    y += art_side + layout.title_gap;
+  }
   if (ui.title_lbl) {
     lv_obj_align(ui.title_lbl, LV_ALIGN_TOP_MID, 0, y);
     y += lv_obj_get_height(ui.title_lbl) + 6;
@@ -445,6 +539,22 @@ inline void media_tv_now_playing_open_modal(MediaTvNowPlayingCtx *ctx) {
   ui.overlay = shell.overlay;
   ui.panel = shell.panel;
   ui.back_btn = shell.close_btn;
+
+  ui.art_side = shell.layout.panel_h / 3;
+  if (ui.art_side < 96) ui.art_side = 96;
+  if (ui.art_side > 280) ui.art_side = 280;
+#if ESPHOME_VERSION_CODE >= VERSION_CODE(2026, 4, 0)
+  ui.art_widget = lv_image_create(ui.panel);
+#else
+  ui.art_widget = lv_img_create(ui.panel);
+#endif
+  if (ui.art_widget) {
+    lv_obj_set_size(ui.art_widget, ui.art_side, ui.art_side);
+    lv_obj_set_style_radius(ui.art_widget, 12, LV_PART_MAIN);
+    lv_obj_set_style_clip_corner(ui.art_widget, true, LV_PART_MAIN);
+    lv_obj_clear_flag(ui.art_widget, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(ui.art_widget, LV_OBJ_FLAG_HIDDEN);
+  }
 
   ui.title_lbl = lv_label_create(ui.panel);
   lv_obj_set_style_text_color(ui.title_lbl, lv_color_hex(DARK_TEXT_PRIMARY), LV_PART_MAIN);
@@ -557,7 +667,15 @@ inline void media_tv_now_playing_open_modal(MediaTvNowPlayingCtx *ctx) {
     lv_label_set_text(ui.duration_lbl, dur_buf);
   }
 
+  media_tv_register_art_callback(ctx);
   media_tv_apply_modal_content(ctx);
+  // Defer the art fetch one tick so the modal paints before the HTTP
+  // connection and JPEG decode start competing for the main loop.
+  lv_timer_create([](lv_timer_t *timer) {
+    MediaTvModalUi &modal_ui = media_tv_modal_ui();
+    if (modal_ui.active) media_tv_request_art(modal_ui.active);
+    lv_timer_del(timer);
+  }, 60, nullptr);
 }
 
 inline MediaTvNowPlayingCtx *create_media_tv_now_playing_context(
@@ -567,7 +685,9 @@ inline MediaTvNowPlayingCtx *create_media_tv_now_playing_context(
   const lv_font_t *modal_subtitle_font, int width_compensation_percent,
   int row_span, int col_span,
   std::function<void()> suspend_display_takeover = nullptr,
-  std::function<void()> resume_display_takeover = nullptr) {
+  std::function<void()> resume_display_takeover = nullptr,
+  esphome::artwork_image::ArtworkImage *art_image = nullptr,
+  std::function<std::string()> art_base_url = nullptr) {
   MediaTvNowPlayingCtx *ctx = new MediaTvNowPlayingCtx();
   ctx->entity_id = p.entity;
   ctx->room_label = p.label;
@@ -593,6 +713,8 @@ inline MediaTvNowPlayingCtx *create_media_tv_now_playing_context(
   ctx->col_span = col_span;
   ctx->suspend_display_takeover = suspend_display_takeover;
   ctx->resume_display_takeover = resume_display_takeover;
+  ctx->art_image = art_image;
+  ctx->art_base_url = art_base_url;
 
   ctx->progress_ctx = new SliderCtx();
   ctx->progress_ctx->entity_id = p.entity;
@@ -691,6 +813,19 @@ inline void subscribe_media_tv_now_playing_state(MediaTvNowPlayingCtx *ctx) {
       })
   );
   ha_subscribe_attribute(
+    ctx->entity_id, std::string("entity_picture"),
+    std::function<void(esphome::StringRef)>(
+      [ctx](esphome::StringRef picture) {
+        std::string pic = string_ref_limited(picture, 4096);
+        if (pic == "unknown" || pic == "unavailable" || pic == "None" || pic == "none") {
+          pic.clear();
+        }
+        if (pic == ctx->art_picture) return;
+        ctx->art_picture = pic;
+        media_tv_request_art(ctx);  // no-op unless this card's modal is open
+      })
+  );
+  ha_subscribe_attribute(
     ctx->entity_id, std::string("friendly_name"),
     std::function<void(esphome::StringRef)>(
       [ctx](esphome::StringRef name) {
@@ -715,12 +850,15 @@ inline void setup_media_tv_now_playing_card(BtnSlot &s, const ParsedCfg &p,
                                             int width_compensation_percent,
                                             int row_span, int col_span,
                                             std::function<void()> suspend_display_takeover,
-                                            std::function<void()> resume_display_takeover) {
+                                            std::function<void()> resume_display_takeover,
+                                            esphome::artwork_image::ArtworkImage *art_image = nullptr,
+                                            std::function<std::string()> art_base_url = nullptr) {
   lv_obj_add_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
   create_media_tv_now_playing_context(
     s, p, on_color, secondary_color, tertiary_color, title_font, subtitle_font,
     icon_font, modal_title_font, subtitle_font, width_compensation_percent,
-    row_span, col_span, suspend_display_takeover, resume_display_takeover);
+    row_span, col_span, suspend_display_takeover, resume_display_takeover,
+    art_image, art_base_url);
 }
 
 inline void refresh_media_tv_now_playing_layout(BtnSlot &s, const ParsedCfg &p,
