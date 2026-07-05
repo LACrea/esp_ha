@@ -795,7 +795,7 @@ inline void climate_build_card_dial(ClimateControlCtx *ctx) {
   lv_obj_add_flag(ctx->dial_unit_lbl, LV_OBJ_FLAG_EVENT_BUBBLE);
 
   ctx->dial_current_dot = lv_obj_create(ctx->btn);
-  lv_obj_set_style_bg_color(ctx->dial_current_dot, lv_color_hex(ctx->secondary_color), LV_PART_MAIN);
+  lv_obj_set_style_bg_color(ctx->dial_current_dot, lv_color_hex(ctx->tertiary_color), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(ctx->dial_current_dot, LV_OPA_COVER, LV_PART_MAIN);
   lv_obj_set_style_border_width(ctx->dial_current_dot, 0, LV_PART_MAIN);
   lv_obj_set_style_shadow_width(ctx->dial_current_dot, 0, LV_PART_MAIN);
@@ -1809,7 +1809,7 @@ inline void climate_control_open_modal(ClimateControlCtx *ctx) {
   }, LV_EVENT_PRESS_LOST, nullptr);
 
   ui.current_dot = lv_obj_create(ui.panel);
-  lv_obj_set_style_bg_color(ui.current_dot, lv_color_hex(ctx->secondary_color), LV_PART_MAIN);
+  lv_obj_set_style_bg_color(ui.current_dot, lv_color_hex(ctx->tertiary_color), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(ui.current_dot, LV_OPA_COVER, LV_PART_MAIN);
   lv_obj_set_style_border_width(ui.current_dot, 0, LV_PART_MAIN);
   lv_obj_set_style_shadow_width(ui.current_dot, 0, LV_PART_MAIN);
