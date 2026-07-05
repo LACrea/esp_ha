@@ -99,6 +99,23 @@ inline void weather_fx_gradient_for(WeatherFxKind kind, uint32_t &top, uint32_t 
   }
 }
 
+// lv_pct(100) only spans the parent's content area, so the layer is sized in
+// pixels and shifted by the card padding to cover the full card face.
+inline void weather_fx_fit_layer(WeatherFxCtx *fx) {
+  if (!fx || !fx->btn || !fx->layer) return;
+  lv_coord_t w = lv_obj_get_width(fx->btn);
+  lv_coord_t h = lv_obj_get_height(fx->btn);
+  if (w <= 0 || h <= 0) return;
+  lv_coord_t off_x = lv_obj_get_style_pad_left(fx->btn, LV_PART_MAIN) +
+                     lv_obj_get_style_border_width(fx->btn, LV_PART_MAIN);
+  lv_coord_t off_y = lv_obj_get_style_pad_top(fx->btn, LV_PART_MAIN) +
+                     lv_obj_get_style_border_width(fx->btn, LV_PART_MAIN);
+  if (lv_obj_get_width(fx->layer) != w || lv_obj_get_height(fx->layer) != h) {
+    lv_obj_set_size(fx->layer, w, h);
+  }
+  lv_obj_set_pos(fx->layer, -off_x, -off_y);
+}
+
 inline lv_coord_t weather_fx_width(WeatherFxCtx *fx) {
   lv_coord_t w = fx->layer ? lv_obj_get_width(fx->layer) : 0;
   if (w <= 0) w = fx->btn ? lv_obj_get_width(fx->btn) : 0;
@@ -227,6 +244,7 @@ inline void weather_fx_tick(lv_timer_t *timer) {
   if (!fx || !fx->layer || fx->kind == WeatherFxKind::NONE) return;
   if (lv_obj_has_flag(fx->layer, LV_OBJ_FLAG_HIDDEN)) return;
   if (!lv_obj_is_visible(fx->layer)) return;
+  weather_fx_fit_layer(fx);
   lv_coord_t w = weather_fx_width(fx);
   lv_coord_t h = weather_fx_height(fx);
 
@@ -322,6 +340,7 @@ inline void weather_fx_apply_condition(WeatherFxCtx *fx, const std::string &cond
   lv_obj_set_style_bg_grad_dir(fx->layer, LV_GRAD_DIR_VER, LV_PART_MAIN);
   lv_obj_set_style_bg_opa(fx->layer, LV_OPA_COVER, LV_PART_MAIN);
   lv_obj_clear_flag(fx->layer, LV_OBJ_FLAG_HIDDEN);
+  weather_fx_fit_layer(fx);
   weather_fx_spawn_particles(fx);
   if (fx->flash) {
     lv_obj_set_style_bg_opa(fx->flash, LV_OPA_TRANSP, LV_PART_MAIN);
@@ -346,6 +365,7 @@ inline void weather_fx_attach(lv_obj_t *btn) {
   fx->rng = esphome::millis() ^ reinterpret_cast<uintptr_t>(btn);
   lv_obj_set_size(layer, lv_pct(100), lv_pct(100));
   lv_obj_set_pos(layer, 0, 0);
+  weather_fx_fit_layer(fx);
   lv_obj_set_style_border_width(layer, 0, LV_PART_MAIN);
   lv_obj_set_style_pad_all(layer, 0, LV_PART_MAIN);
   lv_obj_set_style_bg_opa(layer, LV_OPA_TRANSP, LV_PART_MAIN);
