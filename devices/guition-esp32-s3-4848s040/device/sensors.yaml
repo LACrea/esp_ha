@@ -83,6 +83,7 @@ script:
             id(home_screen_idle_check).execute();
             id(screensaver_idle_check).execute();
           };
+          cfg.media_tv_art_image = id(media_tv_art_download);
           cfg.home_assistant_base_url = []() {
             std::string base = id(cover_art_home_assistant_base_url);
             while (!base.empty() && base.back() == '/') base.pop_back();
@@ -189,6 +190,7 @@ esphome:
               id(home_screen_idle_check).execute();
               id(screensaver_idle_check).execute();
             };
+            cfg.media_tv_art_image = id(media_tv_art_download);
             cfg.home_assistant_base_url = []() {
               std::string base = id(cover_art_home_assistant_base_url);
               while (!base.empty() && base.back() == '/') base.pop_back();
@@ -322,6 +324,7 @@ esphome:
               id(home_screen_idle_check).execute();
               id(screensaver_idle_check).execute();
             };
+            cfg.media_tv_art_image = id(media_tv_art_download);
             cfg.home_assistant_base_url = []() {
               std::string base = id(cover_art_home_assistant_base_url);
               while (!base.empty() && base.back() == '/') base.pop_back();

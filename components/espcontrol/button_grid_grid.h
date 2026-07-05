@@ -51,6 +51,7 @@ struct GridConfig {
   esphome::artwork_image::ArtworkImage **image_card_modal_images = nullptr;
   int image_card_image_count = 0;
   bool image_card_diagnostics = false;
+  esphome::artwork_image::ArtworkImage *media_tv_art_image = nullptr;
   std::function<std::string()> home_assistant_base_url;
 };
 
@@ -481,7 +482,8 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
         display_media_title_font(display),
         display_main_width_percent(display),
         row_span, col_span,
-        cfg.suspend_display_takeover, cfg.resume_display_takeover);
+        cfg.suspend_display_takeover, cfg.resume_display_takeover,
+        cfg.media_tv_art_image, cfg.home_assistant_base_url);
     } else {
       setup_media_card(s, p,
         palette.has_on ? palette.on_val : DEFAULT_SLIDER_COLOR,

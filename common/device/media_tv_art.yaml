@@ -1,0 +1,16 @@
+# =============================================================================
+# TV NOW PLAYING ARTWORK - Shared downloader for the media TV control modal
+# =============================================================================
+# One instance is enough: art is only fetched while a single TV Now Playing
+# modal is open. Target size is set at runtime from the modal layout.
+
+artwork_image:
+  - url: "https://placehold.co/1x1/000000/000000.jpg"
+    id: media_tv_art_download
+    format: AUTO
+    type: RGB565
+    byte_order: LITTLE_ENDIAN
+    resize: 1x1
+    resize_mode: COVER
+    buffer_size: 16384
+    allow_insecure_local_urls: true

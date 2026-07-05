@@ -402,6 +402,7 @@ def package_file_text(device: dict) -> str:
             include_line("screen_setup", "!include ../../common/device/screen_button_setup.yaml"),
             include_line("screen_clock", "!include ../../common/device/screen_clock.yaml"),
             include_line("screen_art", "!include ../../common/device/screen_cover_art.yaml"),
+            include_line("media_tv_art", "!include ../../common/device/media_tv_art.yaml"),
             *(
                 [
                     include_line(
@@ -585,6 +586,7 @@ def cfg_lines(device: dict) -> list[str]:
         lines.append(f"            cfg.image_card_image_count = {image_card_count};")
     if device.get("image_card_diagnostics"):
         lines.append("            cfg.image_card_diagnostics = true;")
+    lines.append("            cfg.media_tv_art_image = id(media_tv_art_download);")
     lines.append("            cfg.home_assistant_base_url = []() {")
     lines.append("              std::string base = id(cover_art_home_assistant_base_url);")
     lines.append("              while (!base.empty() && base.back() == '/') base.pop_back();")
