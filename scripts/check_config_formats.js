@@ -1371,6 +1371,18 @@ assert.strictEqual(
   "",
   "weather current conditions clears large numbers option");
 
+assertButtonRoundTrip(hooks, "weather hero animated background off", {
+  entity: "weather.forecast_home",
+  label: "",
+  icon: "Auto",
+  icon_on: "Auto",
+  sensor: "",
+  unit: "",
+  type: "weather",
+  precision: "hero",
+  options: "weather_background=off",
+}, false);
+
 assertButtonRoundTrip(hooks, "media play pause card", {
   entity: "media_player.living_room",
   label: "Play/Pause",

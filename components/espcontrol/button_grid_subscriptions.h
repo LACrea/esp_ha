@@ -246,6 +246,7 @@ inline void subscribe_weather_hero_state(lv_obj_t *btn_ptr,
       ESP_LOGI("weather", "Hero weather state for %s: %s", entity_id.c_str(), state_text.c_str());
       if (icon_lbl) lv_label_set_text(icon_lbl, weather_icon_for_state(state_text));
       if (condition_lbl) lv_label_set_text(condition_lbl, weather_label_for_state(state_text).c_str());
+      weather_fx_set_condition_for_btn(btn_ptr, normalize_weather_state(state_text));
       notify_dashboard_content_changed();
     })
   );

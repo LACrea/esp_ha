@@ -1312,6 +1312,16 @@ var CARD_CONTRACT_CARDS = {
             "hero"
           ]
         }
+      },
+      {
+        "name": "weather_background",
+        "label": "Animated Background",
+        "kind": "flag",
+        "supportedWhen": {
+          "precision": [
+            "hero"
+          ]
+        }
       }
     ],
     "default": {

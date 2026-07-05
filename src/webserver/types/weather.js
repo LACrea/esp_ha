@@ -178,6 +178,19 @@ registerButtonType("weather", {
 
     var largeNumbersToggle = helpers.renderCardLargeNumbersToggle(panel, b, helpers, WEATHER_CARD_METADATA);
 
+    var backgroundToggle = helpers.renderCardOptionToggle(panel, b, helpers, {
+      label: "Animated Background",
+      idSuffix: "weather-background",
+      checked: function () {
+        return configOptionValue(b.options, "weather_background") !== "off";
+      },
+      onChange: function (button, cardHelpers, checked) {
+        button.options = setConfigOptionValue(
+          button.options, "weather_background", checked ? "" : "off");
+        cardHelpers.saveField("options", button.options);
+      },
+    });
+
     var stripHint = document.createElement("div");
     stripHint.className = "sp-hint";
     panel.appendChild(stripHint);
@@ -206,6 +219,9 @@ registerButtonType("weather", {
       labelField.style.display = forecast ? "" : "none";
       labelInp.placeholder = "e.g. " + weatherCardDefaultForecastLabel(b);
       helpers.syncCardLargeNumbersToggle(largeNumbersToggle, b, helpers, heroOrForecast);
+      if (backgroundToggle && backgroundToggle.row) {
+        backgroundToggle.row.style.display = b.precision === "hero" ? "" : "none";
+      }
       syncStripHint();
     }
 

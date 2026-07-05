@@ -798,6 +798,9 @@ inline void setup_weather_hero_card(BtnSlot &s, const ParsedCfg &p,
   apply_weather_hero_card_layout(
     s, range_row, today_lbl, today_unit_lbl, large_slot, large_numbers, icon_font,
     label_font, sensor_font, large_sensor_font, large_unit_offset_percent);
+  if (cfg_option_value(p.options, "weather_background") != "off") {
+    weather_fx_attach(s.btn);
+  }
 }
 
 inline void setup_weather_forecast_card(BtnSlot &s, const ParsedCfg &p,
