@@ -874,6 +874,7 @@ inline void grid_phase1(
   reset_weather_forecast_cards();
   reset_weather_daily_strip_cards();
   reset_weather_hourly_strip_cards();
+  reset_weather_fx_cards();
   reset_climate_control_refs();
   screen_lock_reset_registry();
 

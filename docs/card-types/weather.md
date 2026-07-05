@@ -40,6 +40,7 @@ Older cards that were created as **Weather Forecast** cards still work. They now
 - In temperature modes, the unit label comes from the panel's **Temperature Unit** setting.
 - In temperature modes, the card label defaults to **Today** or **Tomorrow**, unless you set your own label.
 - In **Hero** mode, the card watches the current condition and also requests today's forecast, showing the condition icon and label alongside today's high / low.
+- Hero cards show a live **animated background** matched to the current condition: falling rain, drifting snow, moving clouds, sliding fog, a warm sun glow, twinkling night stars, and lightning flashes during storms. The animation sits behind the card text and pauses whenever the card is not visible. Turn **Animated Background** off in the card settings to keep a plain hero card.
 - In **Daily Strip** and **Hourly Strip** modes, the card requests the daily or hourly forecast and refreshes it periodically; each column shares the panel's **Temperature Unit** setting.
 - In strip modes, the temperature values are shown slightly smaller than a single reading so negative temperatures (for example **-5/-12**) still fit within each column.
 - If Home Assistant reports `unknown`, `unavailable`, or an unexpected current condition, the card shows a fallback weather icon and a readable label.
